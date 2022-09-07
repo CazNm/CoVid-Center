@@ -24,7 +24,9 @@ object AppModule {
             context,
             CoVidCenterDataBase::class.java,
             "CoVidCenterDB"
-        ).build()
+        ).fallbackToDestructiveMigration()
+
+            .build()
     }
 
     @Singleton

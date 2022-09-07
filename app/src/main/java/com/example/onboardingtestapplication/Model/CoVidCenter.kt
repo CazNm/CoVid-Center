@@ -1,11 +1,13 @@
 package com.example.onboardingtestapplication.Model
 
+import android.util.Log
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.onboardingtestapplication.Model.dao.CoVidCenterDao
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -18,24 +20,35 @@ class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBas
         requestCoVidCenterListFlow(pageIndex)
     }
 
-    suspend fun getCoVidCenterList(): List<CoVidCenter> {
+    suspend fun getCoVidCenterList(): Flow<CoVidCenter> = flow {
         val job = CoroutineScope(Dispatchers.Default).async {
             dataBase.coVidCenterDao().getAll()
         }
 
-        return job.await()
+         val coVidCenterList = job.await()
+
+        Log.d("center","covid center list count : ${coVidCenterList.size}")
+
+        for (item in coVidCenterList) {
+            Log.d("center", "$item")
+            emit(item)
+        }
     }
 
     private fun saveList(list: List<CoVidCenter>) {
        CoroutineScope(Dispatchers.Default).launch {
-           for (item in list)
-               dataBase.coVidCenterDao().insertCoVidCenter(item)
+        withContext(Dispatchers.Default) {
+            for (item in list)
+                dataBase.coVidCenterDao().insertCoVidCenter(item)
+        }
        }
     }
 
     fun removeCenterData() {
         CoroutineScope(Dispatchers.Default).launch {
-            dataBase.coVidCenterDao().deleteAll()
+           withContext(Dispatchers.Default){
+               dataBase.coVidCenterDao().deleteAll()
+           }
         }
     }
 
@@ -92,7 +105,7 @@ data class CoVidCenter @JvmOverloads constructor(
     @ColumnInfo(name = "facility_name") val facilityName : String?,
     @PrimaryKey val id : Int,
     val lat : Double,
-    val Long : Double,
+    val lng : Double,
     val org : String?,
     @ColumnInfo(name =  "phone_number") val phoneNumber : String?,
     val sido : String?,
@@ -102,10 +115,25 @@ data class CoVidCenter @JvmOverloads constructor(
     )// this is model
 
 
-@Database(entities = [CoVidCenter::class], version = 1)
+@Database(entities = [CoVidCenter::class], version = 2, exportSchema = false)
 abstract class CoVidCenterDataBase : RoomDatabase() {
     abstract fun coVidCenterDao() : CoVidCenterDao
 }
+
+//@Database(
+//    version = 2,
+//    entities = [CoVidCenter::class],
+//    exportSchema = false,
+//    autoMigrations = [
+//        AutoMigration (from = 1, to = 2)
+//    ]
+//)
+//
+//abstract class CoVidCenterDataBase : RoomDatabase() {
+//    abstract fun coVidCenterDao() : CoVidCenterDao
+//}
+
+
 /*
 Sample data
 {
