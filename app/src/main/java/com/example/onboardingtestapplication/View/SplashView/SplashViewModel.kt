@@ -1,6 +1,7 @@
 package com.example.onboardingtestapplication.View.SplashView
 
 import android.util.Log
+import android.util.MutableFloat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,6 +10,8 @@ import com.example.onboardingtestapplication.Model.CoVidCenter
 import com.example.onboardingtestapplication.Model.CoVidCenterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
@@ -16,24 +19,32 @@ import kotlin.coroutines.CoroutineContext
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
+    private var progressPercent : Float = 0.0f
     private val _progressValue = MutableLiveData(0.0f)
     private val _changeScreen = MutableLiveData(false)
     private var dataSave = false
+    private val requestListIndex = 10
+    private var taskDone = 0
+
+    private val dataSaveWorkStartList = mutableListOf<Int>()
+    private val dataSaveWorkDoneList = mutableListOf<Int>()
 
     val progressValue : LiveData<Float> = _progressValue
     val changeScreen : LiveData<Boolean> = _changeScreen
 
     private fun progressValueLogic(ctx : CoroutineContext)  = CoroutineScope(ctx).launch {
-            while (isActive) {
-                if (_progressValue.value!! >= 0.8f && !dataSave)
-                else if (_progressValue.value!! > 1.0f )
+        Log.d("splashViewModel", "launch #3 ${Thread.currentThread().name}")
+        while (isActive) {
+                if (progressPercent >= 0.8f && !dataSave)
                 else {
 //                    _progressValue.postValue(_progressValue.value!! + 0.005f) //this is for 2 sec
-                    _progressValue.postValue(_progressValue.value!! + 0.05f) // this is for my debug fast load
+                    progressPercent += 0.005f //post value 는 ui thread 에서 읽어가서 post value 값이 갱신되지 않으면 문제가 생길수도...
+                    _progressValue.postValue(progressPercent)  // this is for my debug fast load
                     delay(10)
                 }
 
-                if(_progressValue.value!! >= 1.0f) {
+                if(progressPercent >= 1.0f) {
+                    progressPercent = 1.0f
                     _progressValue.postValue(1.0f)
 
                     val centerList = mutableListOf<CoVidCenter>()
@@ -42,7 +53,7 @@ class SplashViewModel @Inject constructor(
                     }
                     Log.d("center","flow return : $centerList")
                     Log.d("center","list size : ${centerList.size}")
-                    println("launch process done")
+                    Log.d("splashViewModel","launch process done")
                     _changeScreen.postValue(true)
                     break
                 }
@@ -50,36 +61,32 @@ class SplashViewModel @Inject constructor(
         }
 
 
-
     fun launchProgress() = viewModelScope.launch(Dispatchers.IO) {
-        val centerRequestContext = mutableListOf<CoroutineContext>()
+        Log.d("splashViewModel", "launch #1 ${Thread.currentThread().name}")
 
         coVidCenterRepository.removeCenterData()
-        for(index in 1..10) { //나중에 async await으로 수정 하면 괜찮을거 같다. 타이밍 문제 b
+        for(index in 1..requestListIndex)
             launch {
-                centerRequestContext.add(this.coroutineContext)
-                coVidCenterRepository.requestCoVidCenterList(index)
-                delay(5000) //딜레이를 줄이면 리스트에 저장되는 개수가 적어지는 문제가 있다.;; 일단 오늘 나중에 리팩토링;; 다른 기능부터 하자
+                coVidCenterRepository.requestCoVidCenterList(index).collect{ data ->
+                    Log.d("data", "list size : ${data.size}")
+                    Log.d("data", "list : $data")
+                    withContext(Dispatchers.Default) {
+                        coVidCenterRepository.saveCenterData(data)
+                    }
+
+                    delay(5000)
+                    taskDone += 1
+                    Log.d("splashViewModel", "$taskDone")
+                    if(taskDone >= requestListIndex)
+                        dataSave = true
+                }
 
             }
-        }
 
-        delay(500)
         runBlocking {
             progressValueLogic(this.coroutineContext)
-            Log.d("dataSave", "item ${centerRequestContext[0].isActive}")
-            withContext(Dispatchers.Default) {
-
-                while (!dataSave)
-                {
-                    Log.d("dataSave", "$dataSave")
-                    dataSave = !centerRequestContext.any { it.isActive }
-                    Log.d("dataSave", "$dataSave")
-                    delay(100)
-                }
-            }
         }
 
-        println("logic end")
-   }
+        Log.d("splashViewModel", "Logic end")
+    }
 }

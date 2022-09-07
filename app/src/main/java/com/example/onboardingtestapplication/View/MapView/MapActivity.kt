@@ -63,6 +63,7 @@ class MapActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         requestLocation.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        requestLocation.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
 
         locationSource.postValue(FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE))
 

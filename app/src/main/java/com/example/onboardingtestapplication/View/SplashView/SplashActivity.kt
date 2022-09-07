@@ -46,6 +46,7 @@ class SplashActivity : ComponentActivity() {
         newSingleThreadContext("checkThread").use {
             CoroutineScope(it).launch {
                 println("active screen load checker ${Thread.currentThread().name}")
+
                 while (isActive)
                 {
                     if (splashViewModel.changeScreen.value!!) {

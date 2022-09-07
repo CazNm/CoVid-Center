@@ -2,86 +2,63 @@ package com.example.onboardingtestapplication.Model
 
 import android.util.Log
 import androidx.room.*
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.onboardingtestapplication.Model.dao.CoVidCenterDao
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import retrofit2.await
 import javax.inject.Inject
 
 class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBase) {
 
+    private val _coVidCenterStateFlow = MutableStateFlow<List<CoVidCenter>>(emptyList())
+    val coVidCenterStateFlow = _coVidCenterStateFlow
 
-    fun requestCoVidCenterList(pageIndex: Int) {
-        requestCoVidCenterListFlow(pageIndex)
-    }
 
     suspend fun getCoVidCenterList(): Flow<CoVidCenter> = flow {
         val job = CoroutineScope(Dispatchers.Default).async {
             dataBase.coVidCenterDao().getAll()
         }
 
-         val coVidCenterList = job.await()
-
+        val coVidCenterList = job.await()
         Log.d("center","covid center list count : ${coVidCenterList.size}")
-
         for (item in coVidCenterList) {
             Log.d("center", "$item")
             emit(item)
         }
     }
 
-    private fun saveList(list: List<CoVidCenter>) {
-       CoroutineScope(Dispatchers.Default).launch {
-        withContext(Dispatchers.Default) {
-            for (item in list)
-                dataBase.coVidCenterDao().insertCoVidCenter(item)
-        }
-       }
+    fun saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.Default).launch {
+        for(data in dataList)
+            dataBase.coVidCenterDao().insertCoVidCenter(data)
     }
 
-    fun removeCenterData() {
-        CoroutineScope(Dispatchers.Default).launch {
-           withContext(Dispatchers.Default){
-               dataBase.coVidCenterDao().deleteAll()
-           }
-        }
+    fun removeCenterData() = CoroutineScope(Dispatchers.Default).launch {
+        dataBase.coVidCenterDao().deleteAll()
     }
 
-    private fun requestCoVidCenterListFlow(pageIndex: Int) {
+    fun requestCoVidCenterList (pageIndex: Int)  : Flow<List<CoVidCenter>> = flow  {
         val pageSize = 10
         val callGetCoVidCenter = RetrofitObject.coVidCenterApi.getCenterList(pageIndex, pageSize)
 
-        callGetCoVidCenter.enqueue(object : Callback<CovidCenterResponse> {
-            override fun onResponse(
-                call: Call<CovidCenterResponse>,
-                response: Response<CovidCenterResponse>
-            ) {
-                if (response.isSuccessful) {
-                    println("CoVidCenterData receive success")
-                    println(response.body()?.page)
-                    println(response.body()?.currentCount)
-                    println(response.body()?.perPage)
-                    println("CoVidCenterData receive success")
+      try {
+          val response = callGetCoVidCenter.await()
+          emit(response.data)
+      }
+      catch(e : Exception) {
+          Log.d("splashViewModel", "response error occur $e")
+          emit(emptyList())
 
-                    saveList(response.body()!!.data)
-                } else {
-                    println("CoVidCenterData receive fail")
-                    println("CoVidCenterData receive fail")
+      }finally {
+          Log.d("splashViewModel", "error can not define")
+          emit(emptyList())
+      }
 
-                }
-            }
-
-            override fun onFailure(call: Call<CovidCenterResponse>, t: Throwable) {
-                println("CoVidCenterData receive fail")
-                println("CoVidCenterData receive fail")
-
-            }
-        })
 
 
     }
