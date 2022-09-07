@@ -26,9 +26,6 @@ class SplashViewModel @Inject constructor(
     private val requestListIndex = 10
     private var taskDone = 0
 
-    private val dataSaveWorkStartList = mutableListOf<Int>()
-    private val dataSaveWorkDoneList = mutableListOf<Int>()
-
     val progressValue : LiveData<Float> = _progressValue
     val changeScreen : LiveData<Boolean> = _changeScreen
 
@@ -60,27 +57,27 @@ class SplashViewModel @Inject constructor(
             }
         }
 
-
     fun launchProgress() = viewModelScope.launch(Dispatchers.IO) {
         Log.d("splashViewModel", "launch #1 ${Thread.currentThread().name}")
 
         coVidCenterRepository.removeCenterData()
+
         for(index in 1..requestListIndex)
             launch {
                 coVidCenterRepository.requestCoVidCenterList(index).collect{ data ->
                     Log.d("data", "list size : ${data.size}")
                     Log.d("data", "list : $data")
+
                     withContext(Dispatchers.Default) {
                         coVidCenterRepository.saveCenterData(data)
                     }
 
-                    delay(5000)
+//                    delay(5000)
                     taskDone += 1
                     Log.d("splashViewModel", "$taskDone")
                     if(taskDone >= requestListIndex)
                         dataSave = true
                 }
-
             }
 
         runBlocking {

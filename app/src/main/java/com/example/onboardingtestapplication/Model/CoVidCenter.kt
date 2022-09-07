@@ -5,20 +5,11 @@ import androidx.room.*
 import com.example.onboardingtestapplication.Model.dao.CoVidCenterDao
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import retrofit2.await
 import javax.inject.Inject
 
 class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBase) {
-
-    private val _coVidCenterStateFlow = MutableStateFlow<List<CoVidCenter>>(emptyList())
-    val coVidCenterStateFlow = _coVidCenterStateFlow
-
 
     suspend fun getCoVidCenterList(): Flow<CoVidCenter> = flow {
         val job = CoroutineScope(Dispatchers.Default).async {
@@ -33,7 +24,7 @@ class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBas
         }
     }
 
-    fun saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.Default).launch {
+    fun  saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.Default).launch {
         for(data in dataList)
             dataBase.coVidCenterDao().insertCoVidCenter(data)
     }
@@ -46,21 +37,18 @@ class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBas
         val pageSize = 10
         val callGetCoVidCenter = RetrofitObject.coVidCenterApi.getCenterList(pageIndex, pageSize)
 
-      try {
-          val response = callGetCoVidCenter.await()
-          emit(response.data)
-      }
-      catch(e : Exception) {
-          Log.d("splashViewModel", "response error occur $e")
-          emit(emptyList())
-
-      }finally {
-          Log.d("splashViewModel", "error can not define")
-          emit(emptyList())
-      }
-
-
-
+        try {
+            val response = callGetCoVidCenter.await()
+            emit(response.data)
+        }
+        catch(e : Exception) {
+            Log.d("splashViewModel", "response error occur $e")
+            emit(emptyList())
+        }
+        finally {
+            Log.d("splashViewModel", "error can not define")
+            emit(emptyList())
+        }
     }
 }
 

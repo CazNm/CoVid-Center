@@ -35,6 +35,7 @@ class SplashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         splashViewModel.launchProgress()
+
         setContent {
             Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
                 loadingText()
@@ -46,7 +47,6 @@ class SplashActivity : ComponentActivity() {
         newSingleThreadContext("checkThread").use {
             CoroutineScope(it).launch {
                 println("active screen load checker ${Thread.currentThread().name}")
-
                 while (isActive)
                 {
                     if (splashViewModel.changeScreen.value!!) {
