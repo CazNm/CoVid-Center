@@ -47,15 +47,13 @@ class MapActivity : ComponentActivity() {
     private val mapViewModel : MapViewModel by viewModels()
     private val locationSource = MutableLiveData<FusedLocationSource>()
 
-
-
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1000
     }
 
     private val requestLocation = registerForActivityResult(ActivityResultContracts.RequestPermission()){
         result ->
-        if (!result) { // 권한 거부됨
+        if (!result) { // 권한 거부 시 로직
         }
     }
 
@@ -64,13 +62,13 @@ class MapActivity : ComponentActivity() {
 
         requestLocation.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         requestLocation.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        //권한 요청
 
         locationSource.postValue(FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE))
 
         MainScope().launch {
            mapViewModel.getCenterData()
        }
-
 
         setContent {
             val seoul = LatLng(37.532600, 127.024612)
@@ -82,8 +80,9 @@ class MapActivity : ComponentActivity() {
                 cameraPositionState = cameraPositionState,
                 locationSource = locationSource.observeAsState().value,
                 modifier = Modifier.fillMaxSize(),
-                onMapClick = { point, lantLang ->
+                onMapClick = { point, latLang ->
                     mapViewModel.updateSelectedMarker(null)
+                    Log.d("mapView", "screen : $point / mapPos : $latLang")
                 }
             ) {
 
@@ -100,7 +99,7 @@ class MapActivity : ComponentActivity() {
                     for(item in mapViewModel.centerList.value!!) {
                         Log.d("mapView", "$item")
 
-                        customMarker(coVidCenter = item, cameraPositionState) {
+                        customMarker(coVidCenter = item) {
                             mapViewModel.updateSelectedMarker(item)
                             Log.d("mapView", "marker clicked id: ${item.id}")
                             val centerLocation = LatLng(item.lat, item.lng)
@@ -143,13 +142,7 @@ class MapActivity : ComponentActivity() {
 }
 
 @Composable
-fun naverMapContainer() {
-
-
-}
-
-@Composable
-fun customMarker(coVidCenter: CoVidCenter, cameraPositionState: CameraPositionState, clickFunction : (Marker) ->  Boolean) {
+fun customMarker(coVidCenter: CoVidCenter, clickFunction : (Marker) ->  Boolean) {
 
     val markerColor = when (coVidCenter.centerType){
         "지역" -> Color.Blue

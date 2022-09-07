@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class MapViewModel @Inject constructor (val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
+class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
 
 
     private val _centerList = MutableLiveData<List<CoVidCenter>>()
@@ -36,45 +36,39 @@ class MapViewModel @Inject constructor (val coVidCenterRepository: CoVidCenterRe
     }
 
 
+    private fun updateSelectingState(select : Boolean, id : Int , centerData : CoVidCenter?) {
+        _markerSelect.postValue(select)
+        _selectedMarkerId.postValue(id)
+        _selectedCenterData.postValue(centerData)
+    }
+
     fun updateSelectedMarker(center : CoVidCenter?)  {
         if(center == null) {
-            _markerSelect.postValue(false)
-            _selectedMarkerId.postValue(-1)
-            _selectedCenterData.postValue(null)
+            updateSelectingState(false, -1, null)
             return
         }
 
         if (!_markerSelect.value!!){
-            _markerSelect.postValue(true)
-            _selectedMarkerId.postValue(center?.id)
-            _selectedCenterData.postValue(center)
-            Log.d("mapViewModel", "new marker selected: ${center?.id}")
+            updateSelectingState(true, center.id, center)
+            Log.d("mapViewModel", "new marker selected: ${center.id}")
         }
         else {
             when(center.id)
             {
                 _selectedMarkerId.value!! -> {
-                    _selectedMarkerId.postValue(-1)
-                    _markerSelect.postValue(false)
-                    _selectedCenterData.postValue(null)
-
+                    updateSelectingState(false,  -1, null)
                     Log.d("mapViewModel", "same marker selected release it: ${center.id}")
-
                 }
                 else -> {
-                    _selectedMarkerId.postValue(center.id)
-                    _markerSelect.postValue(true)
-                    _selectedCenterData.postValue(center)
+                    updateSelectingState(true,  center.id, center)
                     Log.d("mapViewModel", "different marker selected change it: ${center.id}")
-
                 }
             }
-
         }
     }
 
     suspend fun getCenterData() {
-        val centerDataList: MutableList<CoVidCenter> = mutableListOf<CoVidCenter>()
+        val centerDataList: MutableList<CoVidCenter> = mutableListOf()
 
         if(_centerList.value == null)
         {
