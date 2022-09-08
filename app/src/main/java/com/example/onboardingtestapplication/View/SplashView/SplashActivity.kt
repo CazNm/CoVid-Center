@@ -3,6 +3,7 @@ package com.example.onboardingtestapplication.View.SplashView
 import android.content.Intent
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -24,12 +25,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.onboardingtestapplication.View.MapView.MapActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
 
 
 @AndroidEntryPoint
 class SplashActivity : ComponentActivity() {
 
-   private val splashViewModel : SplashViewModel by viewModels()
+    private val splashViewModel : SplashViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,22 +45,19 @@ class SplashActivity : ComponentActivity() {
             }
         }
 
-
-        newSingleThreadContext("checkThread").use {
-            CoroutineScope(it).launch {
-                println("active screen load checker ${Thread.currentThread().name}")
-                while (isActive)
-                {
-                    if (splashViewModel.changeScreen.value!!) {
-                        val intent = Intent(this@SplashActivity, MapActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                        startActivity(intent)
-                        break
-                    }
+        MainScope().launch {
+            splashViewModel.changeScreen
+                .filter { changeScreen ->
+                    Log.d("splashActivity", "change value : $changeScreen")
+                    changeScreen
                 }
-            }
+                .collect {
+                    Log.d("splashActivity", "launch screen change")
+                    val intent = Intent(this@SplashActivity, MapActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                }
         }
-
     }
 }
 

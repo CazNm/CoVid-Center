@@ -142,6 +142,11 @@ class MapActivity : ComponentActivity() {
 }
 
 @Composable
+fun naverMap() {
+
+}
+
+@Composable
 fun customMarker(coVidCenter: CoVidCenter, clickFunction : (Marker) ->  Boolean) {
 
     val markerColor = when (coVidCenter.centerType){

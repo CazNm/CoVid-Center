@@ -10,6 +10,7 @@ import com.example.onboardingtestapplication.Model.CoVidCenter
 import com.example.onboardingtestapplication.Model.CoVidCenterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -21,13 +22,15 @@ class SplashViewModel @Inject constructor(
     private val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
     private var progressPercent : Float = 0.0f
     private val _progressValue = MutableLiveData(0.0f)
-    private val _changeScreen = MutableLiveData(false)
+    private val _changeScreen = MutableStateFlow(false)
+
     private var dataSave = false
     private val requestListIndex = 10
     private var taskDone = 0
 
     val progressValue : LiveData<Float> = _progressValue
-    val changeScreen : LiveData<Boolean> = _changeScreen
+    val changeScreen = _changeScreen
+
 
     private fun progressValueLogic(ctx : CoroutineContext)  = CoroutineScope(ctx).launch {
         Log.d("splashViewModel", "launch #3 ${Thread.currentThread().name}")
@@ -51,7 +54,7 @@ class SplashViewModel @Inject constructor(
                     Log.d("center","flow return : $centerList")
                     Log.d("center","list size : ${centerList.size}")
                     Log.d("splashViewModel","launch process done")
-                    _changeScreen.postValue(true)
+                    _changeScreen.emit(true)
                     break
                 }
             }
