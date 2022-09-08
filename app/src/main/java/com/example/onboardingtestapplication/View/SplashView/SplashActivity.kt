@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.onboardingtestapplication.View.MapView.MapActivity
@@ -45,18 +46,19 @@ class SplashActivity : ComponentActivity() {
             }
         }
 
-        MainScope().launch {
-            splashViewModel.changeScreen
-                .filter { changeScreen ->
-                    Log.d("splashActivity", "change value : $changeScreen")
-                    changeScreen
-                }
-                .collect {
-                    Log.d("splashActivity", "launch screen change")
-                    val intent = Intent(this@SplashActivity, MapActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                    startActivity(intent)
-                }
+        splashViewModel.viewModelScope.launch(CoroutineName("change screen coroutine")) {
+               splashViewModel.changeScreen
+                   .filter { changeScreen ->
+                       Log.d("splashActivity", "change value : $changeScreen")
+                       changeScreen
+                   }
+                   .collect {
+                       Log.d("splashActivity", "launch screen change")
+                       val intent = Intent(this@SplashActivity, MapActivity::class.java)
+                       intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                       startActivity(intent)
+                   }
+            Log.d("splashActivity", "change logic end")
         }
     }
 }

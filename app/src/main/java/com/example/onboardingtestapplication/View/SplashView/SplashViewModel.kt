@@ -34,6 +34,7 @@ class SplashViewModel @Inject constructor(
 
     private fun progressValueLogic(ctx : CoroutineContext)  = CoroutineScope(ctx).launch {
         Log.d("splashViewModel", "launch #3 ${Thread.currentThread().name}")
+        delay(1000)
         while (isActive) {
                 if (progressPercent >= 0.8f && !dataSave)
                 else {
@@ -78,6 +79,7 @@ class SplashViewModel @Inject constructor(
 //                    delay(5000)
                     taskDone += 1
                     Log.d("splashViewModel", "$taskDone")
+                    delay(5000)
                     if(taskDone >= requestListIndex)
                         dataSave = true
                 }

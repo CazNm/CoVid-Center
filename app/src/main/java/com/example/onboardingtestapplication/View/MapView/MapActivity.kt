@@ -94,7 +94,6 @@ class MapActivity : ComponentActivity() {
                 }
 
                 if(mapViewModel.centerList.observeAsState().value != null) {
-
                     Log.d("mapView", "${mapViewModel.centerList.value?.size}")
                     for(item in mapViewModel.centerList.value!!) {
                         Log.d("mapView", "$item")
