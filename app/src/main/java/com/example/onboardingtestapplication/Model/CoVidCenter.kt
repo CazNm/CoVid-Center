@@ -49,7 +49,7 @@ class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBas
             Log.d("splashViewModel", "error can not define")
             emit(emptyList())
         }
-    }
+    } //서버 response 처리하기
 }
 
 data class CovidCenterResponse (

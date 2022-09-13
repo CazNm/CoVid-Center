@@ -6,14 +6,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.onboardingtestapplication.Model.CoVidCenter
 import com.example.onboardingtestapplication.Model.CoVidCenterRepository
+import com.naver.maps.map.util.FusedLocationSource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ActivityContext
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 
 @HiltViewModel
 class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
-
 
     private val _centerList = MutableLiveData<List<CoVidCenter>>()
     val centerList : LiveData<List<CoVidCenter>> = _centerList
@@ -23,11 +24,13 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
 
     private var _selectedMarkerId = -1
     private val _selectedCenterData = MutableLiveData<CoVidCenter?>()
+
     val selectedCenterData : LiveData<CoVidCenter?> = _selectedCenterData
 
     init{
         _markerSelect.value = false
-    }
+    } // 생성 초기화 타이밍은 같은 걸로 보임 , 생성자에서 추가적인 로직을 설정할 수 없으므로 추가적인 로직을 통해 넘어오는
+    //값들이 valid 한지 검사하는 것을 직접 구현해서 확인하는 것.
 
     private fun updateSelectingState(select : Boolean, id : Int , centerData : CoVidCenter?) {
         _markerSelect.postValue(select)
@@ -41,7 +44,7 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
             return
         }
 
-        if (!_markerSelect.value!!){
+        if (!markerSelect.value!!){
             updateSelectingState(true, center.id, center)
             Log.d("mapViewModel", "new marker selected: ${center.id}")
         }
@@ -63,7 +66,7 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
     suspend fun getCenterData() {
         val centerDataList: MutableList<CoVidCenter> = mutableListOf()
 
-        if(_centerList.value == null)
+        if(centerList.value == null)
         {
             coVidCenterRepository.getCoVidCenterList()
                 .map { centerValue->
@@ -72,18 +75,16 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
                 }
                 .collect {
                     centerDataList.add(it)
-                }
+                } // hot stream 으로 바꿔서 써보기
 
             Log.d("mapViewModel", "${centerDataList.size}")
         }
         else {
-            _centerList.value!!.map {
+            centerList.value!!.map {
                 centerDataList.add(it)
             }
         }
-
         _centerList.postValue(centerDataList)
     }
-
 }
 

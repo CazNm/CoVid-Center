@@ -45,7 +45,9 @@ import kotlinx.coroutines.launch
 class MapActivity : ComponentActivity() {
 
     private val mapViewModel : MapViewModel by viewModels()
-    private val locationSource = MutableLiveData<FusedLocationSource>()
+    private lateinit var locationSource : FusedLocationSource
+
+    //view 에서는 지양하기 어떻게 viewModel 에 넣어야 할까 대표적인 안티패턴..
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1000
@@ -63,8 +65,8 @@ class MapActivity : ComponentActivity() {
         requestLocation.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         requestLocation.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
         //권한 요청
-
-        locationSource.postValue(FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE))
+        locationSource = FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE)
+        //activity나 fragment 를 받아야해서 viewModel 에 넣기는 힘들것 같다.
 
         MainScope().launch {
            mapViewModel.getCenterData()
@@ -78,7 +80,7 @@ class MapActivity : ComponentActivity() {
 
             NaverMap(
                 cameraPositionState = cameraPositionState,
-                locationSource = locationSource.observeAsState().value,
+                locationSource = locationSource,
                 modifier = Modifier.fillMaxSize(),
                 onMapClick = { point, latLang ->
                     mapViewModel.updateSelectedMarker(null)
@@ -110,25 +112,19 @@ class MapActivity : ComponentActivity() {
             }
 
             currentPositionButton {
-                if(locationSource.value != null) {
-                    locationSource.value?.activate {
+                locationSource.activate {
                         location ->
-                        Log.d("mapView", "${location}")
-                    }
-
-                    Log.d("mapView","active ${locationSource.value?.isActivated}")
-                    Log.d("mapView","last ${locationSource.value?.lastLocation}")
-
-                    val lat = locationSource.value?.lastLocation?.latitude
-                    val lng = locationSource.value?.lastLocation?.longitude
-
-                    val currentLocation = LatLng(lat!!, lng!!)
-                    cameraPositionState.move(CameraUpdate.scrollTo(currentLocation))
-
+                    Log.d("mapView", "${location}")
                 }
-                else{
-                    Log.d("mapView","no location source")
-                }
+
+                Log.d("mapView","active ${locationSource.isActivated}")
+                Log.d("mapView","last ${locationSource.lastLocation}")
+
+                val lat = locationSource.lastLocation?.latitude
+                val lng = locationSource.lastLocation?.longitude
+
+                val currentLocation = LatLng(lat!!, lng!!)
+                cameraPositionState.move(CameraUpdate.scrollTo(currentLocation))
             } // 지도 관련한건.. view model 에 어떻게 넣어야할지 모르겠다..
 
             if(mapViewModel.markerSelect.observeAsState().value == true) {
