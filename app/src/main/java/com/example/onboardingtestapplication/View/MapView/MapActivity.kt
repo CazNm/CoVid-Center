@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.onboardingtestapplication.Model.CoVidCenter
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
@@ -35,11 +36,8 @@ import com.naver.maps.map.compose.*
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.util.FusedLocationSource
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MapActivity : ComponentActivity() {
@@ -68,9 +66,11 @@ class MapActivity : ComponentActivity() {
         locationSource = FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE)
         //activity나 fragment 를 받아야해서 viewModel 에 넣기는 힘들것 같다.
 
-        MainScope().launch {
-           mapViewModel.getCenterData()
-       }
+        CoroutineScope(Dispatchers.Default).launch {
+            mapViewModel.initCenterData()
+            delay(500)
+            mapViewModel.getCenterData()
+        }
 
         setContent {
             val seoul = LatLng(37.532600, 127.024612)

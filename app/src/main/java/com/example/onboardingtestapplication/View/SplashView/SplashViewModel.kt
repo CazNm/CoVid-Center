@@ -44,14 +44,6 @@ class SplashViewModel @Inject constructor(
                 if(progressPercent >= 1.0f) {
                     progressPercent = 1.0f
                     _progressValue.postValue(1.0f)
-
-                    val centerList = mutableListOf<CoVidCenter>()
-                    coVidCenterRepository.getCoVidCenterList().collect {
-                        centerList.add(it)
-                    }
-
-                    Log.d("center","flow return : $centerList")
-                    Log.d("center","list size : ${centerList.size}")
                     Log.d("splashViewModel","launch process done")
                     _changeScreen.emit(true)
                     break

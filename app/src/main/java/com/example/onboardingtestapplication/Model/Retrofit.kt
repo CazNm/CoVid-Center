@@ -23,7 +23,6 @@ object RetrofitObject {
         .addConverterFactory(GsonConverterFactory.create()) // 이건 어떤 기능을 하는지
         .build() // 최종적으로 뭘 만드는지 라이브러리 분석
 
-
     private fun provideOkHttpClient(interceptor : AppInterceptor) :OkHttpClient =
         OkHttpClient.Builder().run {
             addInterceptor(interceptor)
@@ -35,8 +34,8 @@ object RetrofitObject {
         @Throws(IOException::class)
 
         override fun intercept(chain: Interceptor.Chain): Response {
+            val original = chain.request()
 
-          val original = chain.request()
             val request = original.newBuilder()
                 .header("Authorization", authKey)
                 .header("accept","application/json")

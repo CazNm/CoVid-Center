@@ -4,17 +4,25 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.onboardingtestapplication.Model.CoVidCenter
 import com.example.onboardingtestapplication.Model.CoVidCenterRepository
 import com.naver.maps.map.util.FusedLocationSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ActivityContext
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
 class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVidCenterRepository) : ViewModel() {
+
+    private val centerListBuffer = mutableListOf<CoVidCenter>()
 
     private val _centerList = MutableLiveData<List<CoVidCenter>>()
     val centerList : LiveData<List<CoVidCenter>> = _centerList
@@ -27,8 +35,10 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
 
     val selectedCenterData : LiveData<CoVidCenter?> = _selectedCenterData
 
+    private val centerSharedFlow = coVidCenterRepository.centerFlow.shareIn(viewModelScope, SharingStarted.WhileSubscribed(100), 1)
+
     init{
-        _markerSelect.value = false
+        _markerSelect.postValue(false)
     } // 생성 초기화 타이밍은 같은 걸로 보임 , 생성자에서 추가적인 로직을 설정할 수 없으므로 추가적인 로직을 통해 넘어오는
     //값들이 valid 한지 검사하는 것을 직접 구현해서 확인하는 것.
 
@@ -63,28 +73,23 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
         }
     }
 
+    suspend fun initCenterData() {
+        coVidCenterRepository.centerFlow.collect()
+    }
+
     suspend fun getCenterData() {
-        val centerDataList: MutableList<CoVidCenter> = mutableListOf()
-
-        if(centerList.value == null)
-        {
-            coVidCenterRepository.getCoVidCenterList()
-                .map { centerValue->
-                    Log.d("mapViewModel", "${centerValue.centerType}")
-                    centerValue
-                }
-                .collect {
-                    centerDataList.add(it)
-                } // hot stream 으로 바꿔서 써보기
-
-            Log.d("mapViewModel", "${centerDataList.size}")
-        }
-        else {
-            centerList.value!!.map {
-                centerDataList.add(it)
+        centerListBuffer.clear()
+        centerSharedFlow
+            .map { centerValue->
+                Log.d("mapViewModel", "${centerValue.centerType}")
+                centerValue
             }
-        }
-        _centerList.postValue(centerDataList)
+            .collect {
+                centerListBuffer.add(it)
+            } // hot stream 으로 바꿔서 써보기
+
+        Log.d("mapViewModel", "${centerListBuffer.size}")
+
+        _centerList.postValue(centerListBuffer)
     }
 }
-

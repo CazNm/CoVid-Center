@@ -6,12 +6,13 @@ import com.example.onboardingtestapplication.Model.dao.CoVidCenterDao
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.shareIn
 import retrofit2.await
 import javax.inject.Inject
 
 class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBase) {
 
-    suspend fun getCoVidCenterList(): Flow<CoVidCenter> = flow {
+   private val _centerFlow = flow {
         val job = CoroutineScope(Dispatchers.Default).async {
             dataBase.coVidCenterDao().getAll()
         }
@@ -23,6 +24,9 @@ class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBas
             emit(item)
         }
     }
+
+    val centerFlow = _centerFlow
+
 
     fun  saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.Default).launch {
         for(data in dataList)
