@@ -43,7 +43,10 @@ import kotlinx.coroutines.flow.collect
 class MapActivity : ComponentActivity() {
 
     private val mapViewModel : MapViewModel by viewModels()
-    private lateinit var locationSource : FusedLocationSource
+//    private lateinit var locationSource : FusedLocationSource // by lazy 로 접근시 초기화 human error 방지
+    private val locationSource : FusedLocationSource by lazy {
+    FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE)
+}
 
     //view 에서는 지양하기 어떻게 viewModel 에 넣어야 할까 대표적인 안티패턴..
 
@@ -62,15 +65,11 @@ class MapActivity : ComponentActivity() {
 
         requestLocation.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
         requestLocation.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
-        //권한 요청
-        locationSource = FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE)
-        //activity나 fragment 를 받아야해서 viewModel 에 넣기는 힘들것 같다.
 
-        CoroutineScope(Dispatchers.Default).launch {
-            mapViewModel.initCenterData()
-            delay(500)
-            mapViewModel.getCenterData()
-        }
+        //권한 요청
+//        locationSource = FusedLocationSource(this@MapActivity, LOCATION_PERMISSION_REQUEST_CODE)
+
+
 
         setContent {
             val seoul = LatLng(37.532600, 127.024612)

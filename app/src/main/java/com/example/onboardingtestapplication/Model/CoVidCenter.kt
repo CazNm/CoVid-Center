@@ -5,30 +5,21 @@ import androidx.room.*
 import com.example.onboardingtestapplication.Model.dao.CoVidCenterDao
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.shareIn
 import retrofit2.await
 import javax.inject.Inject
 
 class CoVidCenterRepository @Inject constructor(val dataBase: CoVidCenterDataBase) {
+    //repository 에서는 데이터의 출처를 저장하는 말 그대로 데이터의 접근과 API의 결과물을 주는 것.
+    // 여기서 데이터를 가공하는 식의 Handle 은 ViewModel 에서 처리 하는게 이상적임.. 지양해야 할 것.
 
-   private val _centerFlow = flow {
-        val job = CoroutineScope(Dispatchers.Default).async {
-            dataBase.coVidCenterDao().getAll()
-        }
-
-        val coVidCenterList = job.await()
-        Log.d("center","covid center list count : ${coVidCenterList.size}")
-        for (item in coVidCenterList) {
-            Log.d("center", "$item")
-            emit(item)
-        }
+    fun getCenterData() : Flow<List<CoVidCenter>> = flow {
+        emit(dataBase.coVidCenterDao().getAll())
     }
 
-    val centerFlow = _centerFlow
-
-
-    fun  saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.Default).launch {
+    fun  saveCenterData(dataList: List<CoVidCenter>) = CoroutineScope(Dispatchers.IO).launch {
         for(data in dataList)
             dataBase.coVidCenterDao().insertCoVidCenter(data)
     }

@@ -10,12 +10,10 @@ import com.example.onboardingtestapplication.Model.CoVidCenterRepository
 import com.naver.maps.map.util.FusedLocationSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ActivityContext
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import okhttp3.internal.threadName
+import java.lang.Exception
 import javax.inject.Inject
 
 
@@ -35,11 +33,20 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
 
     val selectedCenterData : LiveData<CoVidCenter?> = _selectedCenterData
 
-    private val centerSharedFlow = coVidCenterRepository.centerFlow.shareIn(viewModelScope, SharingStarted.WhileSubscribed(100), 1)
+    private var centerListSharedFlow : SharedFlow<List<CoVidCenter>>? = null
 
     init{
         _markerSelect.postValue(false)
-    } // 생성 초기화 타이밍은 같은 걸로 보임 , 생성자에서 추가적인 로직을 설정할 수 없으므로 추가적인 로직을 통해 넘어오는
+
+        viewModelScope.launch(CoroutineName("initCoroutine")) {
+            initializeListFlow()
+            getCenterList()
+            Log.d("checkingSequential", "coroutineEnd")
+        }
+
+        Log.d("checkingSequential", "initLogicEnd")
+    } // 생성 초기화 타이밍은 같은 걸로 보임 , 생성자
+    // 에서 추가적인 로직을 설정할 수 없으므로 추가적인 로직을 통해 넘어오는
     //값들이 valid 한지 검사하는 것을 직접 구현해서 확인하는 것.
 
     private fun updateSelectingState(select : Boolean, id : Int , centerData : CoVidCenter?) {
@@ -72,24 +79,26 @@ class MapViewModel @Inject constructor (private val coVidCenterRepository: CoVid
             }
         }
     }
-
-    suspend fun initCenterData() {
-        coVidCenterRepository.centerFlow.collect()
+    private suspend fun initializeListFlow() {
+        coVidCenterRepository.getCenterData().flowOn(Dispatchers.IO).collect()
+        centerListSharedFlow =   coVidCenterRepository.getCenterData().flowOn(Dispatchers.IO).shareIn(viewModelScope, SharingStarted.WhileSubscribed(100), 1)
     }
 
-    suspend fun getCenterData() {
+
+    suspend fun getCenterList() {
         centerListBuffer.clear()
-        centerSharedFlow
-            .map { centerValue->
-                Log.d("mapViewModel", "${centerValue.centerType}")
-                centerValue
+        centerListSharedFlow!!.map { centerValue ->
+            Log.d("mapViewModel", "${centerValue.size}")
+            centerValue
+        }.collect {
+            it.map { center ->
+                Log.d("mapViewModel", "center input $center")
+                centerListBuffer.add(center)
             }
-            .collect {
-                centerListBuffer.add(it)
-            } // hot stream 으로 바꿔서 써보기
-
-        Log.d("mapViewModel", "${centerListBuffer.size}")
-
-        _centerList.postValue(centerListBuffer)
+            Log.d("mapViewModel", "list size ${centerListBuffer.size}")
+            _centerList.postValue(centerListBuffer)
+        }
+        //flow 하단 코드에 로직을 설정하면 계속 실행이 안됨.. 이거는 왜 이럴까.,?
+        //stateIn 을 구독하고 있기 때문에 계속 구독중임.. 밑으로 내려오는게 이상한것.
     }
 }

@@ -56,22 +56,27 @@ class SplashViewModel @Inject constructor(
 
         coVidCenterRepository.removeCenterData()
 
-        for(index in 1..requestListIndex)
+        for(index in 1..requestListIndex){
+            Log.d("splashViewModel", "launch count : $index")
             launch {
+                Log.d("splashViewModel", "coroutine launch count : $index")
+
                 coVidCenterRepository.requestCoVidCenterList(index).collect{ data ->
                     Log.d("data", "list size : ${data.size}")
                     Log.d("data", "list : $data")
 
-                    withContext(Dispatchers.Default) {
+                    withContext(Dispatchers.IO) {
                         coVidCenterRepository.saveCenterData(data)
                     }
-
-                    taskDone += 1
-                    Log.d("splashViewModel", "$taskDone")
-                    if(taskDone >= requestListIndex)
-                        dataSave = true
                 }
+
+                taskDone += 1
+                Log.d("splashViewModel", "task done : $taskDone")
+                if(taskDone >= requestListIndex)
+                    dataSave = true
             }
+        }
+
 
         runBlocking {
             progressValueLogic(this.coroutineContext)
