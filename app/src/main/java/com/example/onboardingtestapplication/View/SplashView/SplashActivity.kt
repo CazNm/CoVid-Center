@@ -24,6 +24,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.onboardingtestapplication.View.MapView.MapActivity
+import com.example.onboardingtestapplication.View.SplashView.screeen.SplashScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
@@ -40,10 +41,7 @@ class SplashActivity : ComponentActivity() {
         splashViewModel.launchProgress()
 
         setContent {
-            Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
-                loadingText()
-                progressBar(progressValue = splashViewModel.progressValue.observeAsState().value!!)
-            }
+          SplashScreen(splashViewModel)
         }
 
         splashViewModel.viewModelScope.launch(CoroutineName("change screen coroutine")) {
@@ -63,13 +61,3 @@ class SplashActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun progressBar(progressValue : Float) {
-    LinearProgressIndicator(progressValue, backgroundColor = Color.White, modifier = Modifier.padding(30.dp));
-}
-
-@Preview
-@Composable
-fun loadingText() {
-    Text("Loading...",fontSize = 24.sp, color = Color.Black)
-}

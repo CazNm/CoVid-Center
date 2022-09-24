@@ -36,7 +36,7 @@ class SplashViewModel @Inject constructor(
                 if (progressPercent >= 0.8f && !dataSave)
                     else {
 //                    _progressValue.postValue(_progressValue.value!! + 0.005f) //this is for 2 sec
-                    progressPercent += 0.05f //post value 는 ui thread 에서 읽어가서 post value 값이 갱신되지 않으면 문제가 생길수도...
+                    progressPercent += 0.005f //post value 는 ui thread 에서 읽어가서 post value 값이 갱신되지 않으면 문제가 생길수도...
                     _progressValue.postValue(progressPercent)  // this is for my debug fast load
                     delay(10)
                     }
